@@ -93,6 +93,11 @@ public class BusinessProcess implements Serializable {
 
   @Inject private Instance<Conversation> conversationInstance;
 
+  /**
+   * @param processDefinitionId ID of the process definition to be started.
+   * 
+   * @returns a `ProcessInstance` object representing the started process instance.
+   */
   public ProcessInstance startProcessById(String processDefinitionId) {
     assertCommandContextNotActive();
 
@@ -103,6 +108,17 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * starts a process instance based on a specified process definition ID and business
+   * key, retrieves the instance from the process engine, sets its execution state, and
+   * returns it.
+   * 
+   * @param processDefinitionId identity of the process definition to start.
+   * 
+   * @param businessKey
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessById(String processDefinitionId, String businessKey) {
     assertCommandContextNotActive();
 
@@ -113,6 +129,13 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param processDefinitionId identity of the process definition to be executed.
+   * 
+   * @param variables
+   * 
+   * @returns a `ProcessInstance` object containing details of the started process.
+   */
   public ProcessInstance startProcessById(String processDefinitionId, Map<String, Object> variables) {
     assertCommandContextNotActive();
 
@@ -125,6 +148,16 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param processDefinitionId identifier of the process definition that is being started.
+   * 
+   * @param businessKey
+   * 
+   * @param variables map of variables to be passed to the process instance when starting
+   * it.
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessById(String processDefinitionId, String businessKey, Map<String, Object> variables) {
     assertCommandContextNotActive();
 
@@ -137,6 +170,11 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param key process instance key to start.
+   * 
+   * @returns
+   */
   public ProcessInstance startProcessByKey(String key) {
     assertCommandContextNotActive();
 
@@ -147,6 +185,17 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * starts a process instance based on its key and business key, checks if it has
+   * ended, and sets the execution variable if not.
+   * 
+   * @param key
+   * 
+   * @param businessKey unique identifier of the business process associated with the
+   * given `key`.
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessByKey(String key, String businessKey) {
     assertCommandContextNotActive();
 
@@ -157,6 +206,13 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param key unique process instance key to be started.
+   * 
+   * @param variables
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessByKey(String key, Map<String, Object> variables) {
     assertCommandContextNotActive();
 
@@ -169,6 +225,18 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param key
+   * 
+   * @param businessKey business key of the process instance to be started, which is
+   * used to identify the specific process instance to be executed by the
+   * `startProcessInstanceByKey()` method.
+   * 
+   * @param variables Map of variables to be passed to the process instance when it is
+   * started, allowing for dynamic configuration and customization of the process.
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessByKey(String key, String businessKey, Map<String, Object> variables) {
     assertCommandContextNotActive();
 
@@ -181,6 +249,13 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param messageName message to start a process instance by, which is used by the
+   * `processEngine.getRuntimeService().startProcessInstanceByMessage()` method to
+   * identify the appropriate process instance to execute.
+   * 
+   * @returns
+   */
   public ProcessInstance startProcessByMessage(String messageName) {
     assertCommandContextNotActive();
 
@@ -192,6 +267,19 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * starts a process instance based on a given message name and process variables,
+   * retrieves the latest cached variable map, updates it with provided variables, and
+   * starts the process instance using the `getRuntimeService().startProcessInstanceByMessage()`
+   * method. If the instance is not ended after starting, sets its execution to the function.
+   * 
+   * @param messageName
+   * 
+   * @param processVariables variables that are used to initialize the process instance
+   * when starting it by message.
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessByMessage(String messageName, Map<String, Object> processVariables) {
     assertCommandContextNotActive();
 
@@ -204,6 +292,18 @@ public class BusinessProcess implements Serializable {
     return instance;
   }
 
+  /**
+   * @param messageName
+   * 
+   * @param businessKey identifier of the business process to be started, which is used
+   * to identify the correct process instance in the process engine's runtime service.
+   * 
+   * @param processVariables variables that should be used to start the process instance,
+   * which are then cached and used to initiate the process instance via the
+   * `startProcessInstanceByMessage()` method.
+   * 
+   * @returns a `ProcessInstance` object representing the started process.
+   */
   public ProcessInstance startProcessByMessage(String messageName, String businessKey, Map<String, Object> processVariables) {
     assertCommandContextNotActive();
 
@@ -352,6 +452,10 @@ public class BusinessProcess implements Serializable {
     }
   }
 
+  /**
+   * @returns a boolean value indicating whether a task is associated with the current
+   * object.
+   */
   public boolean isTaskAssociated() {
     return associationManager.getTask() != null;
   }
@@ -731,18 +835,28 @@ public class BusinessProcess implements Serializable {
 
   // internal implementation //////////////////////////////////////////////////////////
 
+  /**
+   * 
+   */
   protected void assertExecutionAssociated() {
     if (associationManager.getExecution() == null) {
       throw new ProcessEngineCdiException("No execution associated. Call busniessProcess.associateExecutionById() or businessProcess.startTask() first.");
     }
   }
 
+  /**
+   * verifies that a task is associated with the current business process instance, and
+   * throws an exception if no task is associated.
+   */
   protected void assertTaskAssociated() {
     if (associationManager.getTask() == null) {
       throw new ProcessEngineCdiException("No task associated. Call businessProcess.startTask() first.");
     }
   }
 
+  /**
+   * 
+   */
   protected void assertCommandContextNotActive() {
     if(Context.getCommandContext() != null) {
       throw new ProcessEngineCdiException("Cannot use this method of the BusinessProcess bean from an active command context.");
