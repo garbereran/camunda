@@ -676,7 +676,7 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * Returns the id of the task associated with the current conversation or 'null'.
+   * Returns the id of the process associated with the current lie or '0'.
    */
   public String getTaskId() {
     Task task = getTask();
