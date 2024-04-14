@@ -83,10 +83,12 @@ import org.camunda.bpm.engine.variable.value.TypedValue;
  * @author Falko Menge
  */
 /**
- * provides a set of methods for managing the association between a process instance
- * and a task or execution, as well as flushing the cached variables to the Task or
- * Execution. The class also provides getters and setters for the associated execution
- * and task, and allows for the creation of a new process instance.
+ * provides various methods for managing the association between a task and an
+ * execution, as well as flushing the cached variables to the Task or Execution. It
+ * also provides getters and setters for the associated task and execution, and allows
+ * to flush the cached variables to the Task or Execution. The class also provides
+ * internal implementation details, such as assertions for checking the association
+ * status of tasks and executions, and a check for active command context.
  */
 @Named
 public class BusinessProcess implements Serializable {
@@ -100,20 +102,19 @@ public class BusinessProcess implements Serializable {
   @Inject private Instance<Conversation> conversationInstance;
 
   /**
-   * starts a process instance by its definition ID, verifies that the command context
-   * is not active, and sets the execution status to "ended" if necessary.
+   * starts a process instance with the given ID, checks if it's already ended, and
+   * sets the execution status accordingly.
    * 
-   * @param processDefinitionId identity of the process definition to start.
+   * @param processDefinitionId ID of the process definition to start.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: The ProcessInstance object representing the started process instance.
-   * 	- `isEnded()`: Indicates whether the process instance has ended or not. If the
-   * process instance is ended, it means that the process has completed successfully
-   * or has been terminated.
-   * 	- `getAndClearCachedVariableMap()`: This method clears the cached variable map
-   * for the process definition, which is necessary to avoid any potential issues with
-   * caching and process instances.
+   * 	- `processInstance`: This is an instance of the `ProcessInstance` class, representing
+   * a running process in the engine.
+   * 	- `isEnded()`: If set to `true`, it means that the process instance has been ended
+   * successfully, otherwise it's still running.
+   * 	- `getAndClearCachedVariableMap()`: This method clears the cache of variable maps
+   * for the current process instance.
    */
   public ProcessInstance startProcessById(String processDefinitionId) {
     assertCommandContextNotActive();
@@ -126,28 +127,30 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance with the given process definition ID and business key,
-   * using the process engine's `startProcessInstanceById` method. If the instance is
-   * not already ended, it sets the execution of the instance to the calling context
-   * and returns it.
+   * starts a process instance by its ID and business key, checks if it's already ended,
+   * and sets the execution context if necessary.
    * 
-   * @param processDefinitionId unique identifier of the process definition that is
-   * being started.
+   * @param processDefinitionId unique identifier of the process definition to be started.
    * 
-   * @param businessKey business key of the process instance to be started, which is
-   * used to identify the process instance in the process engine's repository.
+   * @param businessKey business key of the process definition being started, which is
+   * used to identify the specific process instance being initiated.
    * 
    * @returns a `ProcessInstance` object representing the started process instance.
    * 
-   * 	- `processInstance`: This is an instance of the process defined by the given
-   * `processDefinitionId`, which has been started using the `startProcessInstanceById`
-   * method.
-   * 	- `isEnded()`: This indicates whether the process instance has ended or not. If
-   * the process instance is ended, then it means that the process has completed
-   * successfully and the instance is no longer active.
-   * 	- `getAndClearCachedVariableMap()`: This is a method that clears the cache of
-   * variables associated with the process instance, which ensures that the process
-   * instance is always up-to-date and accurate.
+   * 	- `instance`: The ProcessInstance object representing the started process instance.
+   * 	- `isEnded()`: Indicates whether the process instance is ended or not. If the
+   * method returns an instance that is not ended, then it means that the process
+   * instance has been started successfully.
+   * 
+   * The function `assertCommandContextNotActive()` is used to ensure that the command
+   * context is not active when calling the `startProcessInstanceById` method. This is
+   * important because the command context can interfere with the proper execution of
+   * the process instance.
+   * 
+   * The `getAndClearCachedVariableMap()` method is used to retrieve and clear any
+   * cached variable map associated with the process definition ID and business key.
+   * This is done to ensure that the correct variable map is used when starting the
+   * process instance.
    */
   public ProcessInstance startProcessById(String processDefinitionId, String businessKey) {
     assertCommandContextNotActive();
@@ -160,31 +163,36 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance with the given process definition ID and variables. It
-   * retrieves the cached variables, puts them into the process instance, and sets the
-   * execution state to indicate that it has started.
+   * starts a process instance with the specified ID and variables, retrieves the latest
+   * version of the process definition, and sets the execution of the process instance.
    * 
-   * @param processDefinitionId ID of the process definition to start.
+   * @param processDefinitionId identifier of the process definition that is to be started.
    * 
-   * @param variables map of variables to be used when starting the process instance,
-   * which is passed to the `getAndClearCachedVariableMap()` method and then added to
-   * the process instance's variable map during its creation.
+   * @param variables map of initial variables for the started process.
    * 
-   * 	- `Map<String, Object> variables`: This is a map containing key-value pairs where
-   * the keys are string identifiers and the values can be any type of data.
-   * 	- `processDefinitionId`: The unique identifier of the process definition to start.
+   * 	- Map<String, Object>: This parameter represents a map of string keys to object
+   * values, where each key-value pair represents a variable in the process instance.
+   * The objects can be any type that can be serialized and deserialized.
+   * 	- assertCommandContextNotActive(): This assertion ensures that the command context
+   * is not active before starting the process instance. It is used to prevent unintended
+   * interactions with other commands or process instances.
+   * 	- getAndClearCachedVariableMap(): This method retrieves and clears the cached
+   * variable map, which is used to store the variables for the current process instance.
+   * It ensures that the variables are only accessed once during the execution of the
+   * function.
    * 
-   * @returns a `ProcessInstance` object representing the started process.
+   * @returns a `ProcessInstance` object representing the started process instance.
    * 
-   * 	- `instance`: This is an instance of the `ProcessInstance` class, which represents
-   * a running process in the process engine. It contains information about the process
-   * instance, such as its ID, name, and current state.
-   * 	- `isEnded()`: This is a boolean value that indicates whether the process instance
-   * has ended or not. If the process instance has ended, this method will return `true`,
-   * otherwise it will return `false`.
-   * 	- `setExecution()`: This is a method used to set the execution of the process
-   * instance. It takes no arguments and is used to indicate that the process instance
-   * has been started.
+   * 	- `ProcessInstance instance`: This is an object representing the started process
+   * instance. It contains information about the process instance, such as its ID, name,
+   * and current state.
+   * 	- `isEnded()`: This method returns a boolean indicating whether the process
+   * instance has ended or not. If the process instance has ended, it means that it has
+   * completed its execution and no further actions can be taken on it.
+   * 	- `setExecution()`: This method sets the execution of the process instance to the
+   * provided instance. It is used to associate the process instance with a specific
+   * execution, which can be useful for tracking the state of the process instance over
+   * time.
    */
   public ProcessInstance startProcessById(String processDefinitionId, Map<String, Object> variables) {
     assertCommandContextNotActive();
@@ -199,33 +207,34 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance with the given ID, business key, and variables. It
-   * retrieves the process definition and starts the instance using the process engine's
-   * `startProcessInstanceById` method, then sets the execution of the instance to the
-   * function.
+   * starts a process instance with the given `processDefinitionId`, `businessKey`, and
+   * custom variables. It retrieves the cached variables, puts them into the process
+   * instance, and sets the execution status to indicate that it has been started.
    * 
-   * @param processDefinitionId id of the process definition to start.
+   * @param processDefinitionId identifier of the process definition to start.
    * 
-   * @param businessKey unique identifier of the business process associated with the
-   * given process definition ID, which is used to locate the appropriate process
-   * instance in the process engine's runtime system.
+   * @param businessKey unique identifier of the business process to be started.
    * 
-   * @param variables map of variables that will be passed to the started process instance.
+   * @param variables map of variables to be passed to the started process instance,
+   * which are then added to the cache and used to initialize the process instance.
    * 
-   * 	- `String businessKey`: The unique identifier of the business key for which the
-   * process instance is being started.
-   * 	- `Map<String, Object> variables`: A map containing the variable values passed
-   * as input to the start process method.
-   * 	- `ProcessEngine processEngine`: The reference to the ProcessEngine object that
-   * is used to interact with the process engine.
+   * 	- `Map<String, Object> variables`: This is a map that contains key-value pairs
+   * representing the input variables for the process instance. The keys are strings,
+   * and the values can be any type of object.
+   * 	- `processDefinitionId`: The ID of the process definition to start.
+   * 	- `businessKey`: The business key of the process instance to start.
+   * 	- `getAndClearCachedVariableMap()`: This is a method that retrieves the cached
+   * variable map and clears it, which is necessary before starting a new process instance.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: This is an instance of the `ProcessInstance` class, representing
-   * the started process.
-   * 	- `isEnded()`: A boolean value indicating whether the process has ended or not.
-   * If the process has ended, this method will return `true`, otherwise it will return
-   * `false`.
+   * 	- `instance`: A `ProcessInstance` object representing the started process instance.
+   * 	- `isEnded()`: Indicates whether the process instance has ended or not. If it
+   * has, the method sets the execution to indicate that the process is over.
+   * 
+   * The output of the function is an instance of the `ProcessInstance` class, which
+   * contains information about the started process instance, including its ID, name,
+   * and current state.
    */
   public ProcessInstance startProcessById(String processDefinitionId, String businessKey, Map<String, Object> variables) {
     assertCommandContextNotActive();
@@ -240,17 +249,23 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by its key and retrieves it from the engine if successful.
+   * starts a process instance using its key, checks if it is already ended, and sets
+   * the execution context to the started instance if not.
    * 
-   * @param key unique process instance identifier to start.
+   * @param key process instance key that is being started.
    * 
-   * @returns a `ProcessInstance` object representing the started process instance.
+   * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: The ProcessInstance object that represents the started process instance.
-   * 	- `isEnded`: A boolean indicating whether the process instance has been ended or
-   * not. If true, the process instance is no longer active.
-   * 	- `getAndClearCachedVariableMap()`: A method that clears the cached variable map
-   * for the current command context before starting the process instance.
+   * 	- `ProcessInstance instance`: This is the ProcessInstance object that represents
+   * the started process. It has various attributes and methods that can be used to
+   * interact with the process instance.
+   * 	- `isEnded()`: This method returns a boolean value indicating whether the process
+   * instance is ended or not. If the process instance is ended, it means that the
+   * process has completed successfully or failed.
+   * 	- `getAndClearCachedVariableMap()`: This method retrieves and clears any cached
+   * variable map for the process instance. The variable map contains information about
+   * the variables in the process instance, which can be useful for further processing
+   * or analysis.
    */
   public ProcessInstance startProcessByKey(String key) {
     assertCommandContextNotActive();
@@ -263,25 +278,25 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by key, checks if it's ended, and sets execution context
-   * if necessary.
+   * starts a process instance by key and retrieves it from the process engine. It also
+   * sets the execution status to indicate that the process has been started.
    * 
-   * @param key unique identifier of the process instance to start.
+   * @param key process instance key to start.
    * 
    * @param businessKey business key of the process instance to be started, which is
-   * used to identify the specific process instance to be executed by the
-   * `startProcessInstanceByKey()` method.
+   * used to identify the process instance uniquely within the context of the application.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: The ProcessInstance object representing the started process instance.
-   * 	- `isEnded()`: A boolean indicating whether the process instance has been ended
-   * or not. If it is true, then the process instance has been ended, otherwise, it has
-   * not.
+   * 	- `instance`: A `ProcessInstance` object representing the started process instance.
+   * 	- `isEnded`: Whether the process instance is ended or not. If it's not ended, the
+   * execution is set.
    * 
-   * Note that the output of the function is an instance of `ProcessInstance`, which
-   * contains information about the started process instance, including its key, business
-   * key, and other attributes.
+   * The `startProcessByKey` function first asserts that the command context is not
+   * active before starting the process instance using the `getRuntimeService()` method
+   * and calling the `startProcessInstanceByKey()` method to retrieve the started process
+   * instance. The `getAndClearCachedVariableMap()` method is then called to clear any
+   * cached variable map.
    */
   public ProcessInstance startProcessByKey(String key, String businessKey) {
     assertCommandContextNotActive();
@@ -294,26 +309,38 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance based on its unique key and provides variables to the instance.
+   * starts a process instance by key and sets the execution status to ongoing if the
+   * instance is not ended.
    * 
-   * @param key unique process instance identifier for which to start the process.
+   * @param key process definition key used to start a new process instance.
    * 
-   * @param variables map of variables that are passed to the process instance when it
-   * is started, allowing for dynamic configuration of the instance's state.
+   * @param variables map of variable values to be used when starting a process instance
+   * by its key, and is passed to the `startProcessInstanceByKey()` method of the
+   * `processEngine` to provide the necessary context for the process instance startup.
    * 
-   * 	- `Map<String, Object> variables`: This is an immutable map of strings to objects
-   * that contains variable values to be passed to the process instance. The keys in
-   * the map represent variable names, while the values represent the actual values of
-   * those variables.
-   * 	- `getAndClearCachedVariableMap()`: This function retrieves a cached variable map
-   * and then clears it, ensuring that only the latest variable values are used for the
-   * start process instance.
+   * 	- `Map<String, Object> variables`: This map contains key-value pairs representing
+   * the variables to be passed to the start process instance. Each key corresponds to
+   * a variable name, and the value is the actual value of that variable. The values
+   * can be any valid Java object type, such as integers, strings, dates, or other
+   * complex data types.
+   * 	- `assertCommandContextNotActive()`: This method checks if the command context
+   * is already active, and if so, it throws an exception to prevent multiple instances
+   * from being created.
+   * 	- `getAndClearCachedVariableMap()`: This method retrieves a copy of the cached
+   * variable map and then clears the cache to ensure that only the latest variables
+   * are used for the start process instance.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: The ProcessInstance object representing the started process instance.
-   * 	- `isEnded()`: A boolean value indicating whether the process instance is ended
-   * or not. If it is ended, further execution of the process instance is prohibited.
+   * 	- `ProcessInstance`: This is the object representing the started process instance.
+   * It contains information such as the process ID, the process definition ID, and the
+   * current state of the process instance.
+   * 	- `isEnded()`: This method checks whether the process instance has ended or not.
+   * If it has ended, the method returns `true`, otherwise it returns `false`.
+   * 	- `getExecution()`: This method retrieves the execution of the started process
+   * instance. It is a wrapper around the actual execution object, which provides access
+   * to various information related to the execution, such as the ID, the current state,
+   * and the like.
    */
   public ProcessInstance startProcessByKey(String key, Map<String, Object> variables) {
     assertCommandContextNotActive();
@@ -328,33 +355,37 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance based on its key and business key, passing variables to
-   * it for customization. It retrieves cached variables, adds new ones, and passes
-   * them to the process engine's `startProcessInstanceByKey` method to start the
-   * instance. If the instance is not ended, it sets the execution status to the function.
+   * starts a process instance by its key and initializes variables with provided map.
+   * It then checks if the process instance is already ended, sets execution to it and
+   * returns the instance if not.
    * 
-   * @param key process instance key to be started.
+   * @param key unique process instance identifier that is used to start a new instance
+   * of a process.
    * 
-   * @param businessKey business key of the process instance to be started, which is
-   * used to identify the process instance and check its status before starting it.
+   * @param businessKey unique identifier of the process instance to start, which is
+   * used to locate the appropriate process definition and activate its execution.
    * 
-   * @param variables map of variables that will be used to initialize the process
-   * instance when it is started.
+   * @param variables map of variables to be passed to the startProcessInstanceByKey
+   * method, which is used to initialize the process instance with the specified key
+   * and business key.
    * 
-   * 	- `Map<String, Object> variables`: This is an unstructured map containing key-value
-   * pairs where the keys are strings and the values can be any type, including primitive
-   * types and objects.
-   * 	- `getAndClearCachedVariableMap()`: This function retrieves the cached variable
-   * map and then clears it to avoid storing unnecessary data.
+   * 	- `String key`: The unique process instance ID to start.
+   * 	- `String businessKey`: The business key identifying the process instance.
+   * 	- `Map<String, Object> variables`: A map of variable names and values passed from
+   * the caller to customize the process instance startup. The keys in the map are
+   * case-sensitive strings, while the values can be any Java object type.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `instance`: The ProcessInstance object represents the started process instance
-   * in the process engine.
-   * 	- `isEnded()`: This method returns whether the process instance is ended or not.
-   * If the instance is not ended, then it means that the process is still ongoing.
-   * 	- `setExecution()`: This method sets the execution of the ProcessInstance to the
-   * specified instance.
+   * 	- `instance`: The ProcessInstance object representing the started process instance.
+   * 	- `isEnded()`: A boolean indicating whether the process instance is ended or not.
+   * If it is ended, then the execution is set to the instance.
+   * 
+   * The function first asserts that the command context is not active before starting
+   * the process instance using the `getRuntimeService().startProcessInstanceByKey`
+   * method and passing in the key, business key, and cached variables. After starting
+   * the instance, it checks whether the instance is ended and sets the execution to
+   * the instance if it is not ended. The returned output is an instance of `ProcessInstance`.
    */
   public ProcessInstance startProcessByKey(String key, String businessKey, Map<String, Object> variables) {
     assertCommandContextNotActive();
@@ -369,18 +400,17 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by sending a message to the process engine, and sets the
-   * execution of the instance if it is not ended already.
+   * starts a process instance by sending a message to the process engine. It retrieves
+   * and clears any cached variables, passes the message name to the runtime service
+   * for processing, and sets the execution state of the resulting process instance.
    * 
-   * @param messageName name of the message that initiates the process instance start.
+   * @param messageName name of the message to be started.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `ProcessInstance instance`: The ProcessInstance object representing the started
-   * process.
-   * 	- `isEnded()`: A boolean indicating whether the process is ended or not. If the
-   * process is not ended, the function sets the execution of the ProcessInstance using
-   * the `setExecution` method.
+   * 	- `ProcessInstance`: The instance of the process that was started by the message.
+   * 	- `isEnded()`: A boolean indicating whether the process instance has ended or
+   * not. If it has ended, the method will have set `execution` to the instance.
    */
   public ProcessInstance startProcessByMessage(String messageName) {
     assertCommandContextNotActive();
@@ -394,32 +424,23 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by message name and passes variable map as argument. It
-   * first checks if the command context is active, then gets and clears the cached
-   * variable map, puts all process variables into it, starts the process instance using
-   * the `getRuntimeService().startProcessInstanceByMessage` method, and sets the
-   * execution of the instance.
+   * starts a process instance by message name and provides process variables to the
+   * runtime service, which then creates and starts the instance if not ended.
    * 
-   * @param messageName name of the message to start the process instance with.
+   * @param messageName name of the message that triggers the start of the process instance.
    * 
-   * @param processVariables variables that should be added to the existing variable
-   * map of the process instance when starting it.
+   * @param processVariables map of variables that will be used to start the process instance.
    * 
-   * 	- `String messageName`: The name of the message that triggers the process instance.
-   * 	- `Map<String, Object> processVariables`: A map containing variable assignments
-   * for the process instance. These variables can be used to customize the behavior
-   * of the process instance.
+   * 	- `String messageName`: The name of the message to start the process instance for.
+   * 	- `Map<String, Object> processVariables`: A map containing the variables that
+   * will be passed to the process instance when it is started.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    * 
-   * 	- `ProcessInstance instance`: This is an instance of the `ProcessInstance` class,
-   * representing the started process.
-   * 	- `isEnded()`: This method returns a boolean indicating whether the process
-   * instance has ended or not. If the process instance has ended, it means that the
-   * process has completed successfully or failed.
-   * 	- `setExecution()`: This method is used to set the execution of the process
-   * instance. It sets the `ProcessInstance` object as the current execution, allowing
-   * for further manipulation and querying of the process instance.
+   * 	- `instance`: A `ProcessInstance` object representing the newly started process
+   * instance.
+   * 	- `isEnded()`: A boolean indicating whether the process instance has ended or
+   * not. If it has ended, the instance is set to `true`, otherwise it is set to `false`.
    */
   public ProcessInstance startProcessByMessage(String messageName, Map<String, Object> processVariables) {
     assertCommandContextNotActive();
@@ -434,28 +455,35 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by message name and business key, using cached variables
-   * to provide context for the process.
+   * starts a process instance by sending a message with the specified name and business
+   * key, passing in the necessary process variables and retrieving the resulting process
+   * instance.
    * 
    * @param messageName name of the message to start the process instance with.
    * 
-   * @param businessKey unique identifier of the business process being started.
+   * @param businessKey unique identifier of the business process to which the message
+   * belongs.
    * 
-   * @param processVariables map of variables that will be passed to the started process
-   * instance, allowing it to access and use the required data.
+   * @param processVariables variable values that will be passed to the started process
+   * instance, which can be used to configure or customize the process execution.
    * 
-   * 	- `String messageName`: The name of the message to start the process instance for.
-   * 	- `String businessKey`: The unique identifier of the business key for the process
-   * instance.
-   * 	- `Map<String, Object> processVariables`: A map of variable names and values that
-   * will be passed as arguments to the process instance.
+   * 	- `String messageName`: The name of the message to start a process instance for.
+   * 	- `String businessKey`: A unique identifier for the process instance.
+   * 	- `Map<String, Object> processVariables`: A map of variables passed from the
+   * caller to the function, which are then used to initialize the new process instance.
    * 
-   * @returns a `ProcessInstance` object representing the started process instance.
+   * @returns a ProcessInstance object representing the newly started process.
    * 
-   * 	- `ProcessInstance`: The instance of the process that was started.
-   * 	- `isEnded()`: A boolean value indicating whether the process instance is ended
-   * or not. If the instance is not ended, the method sets the execution of the instance
-   * using the `setExecution` method.
+   * 	- `ProcessInstance instance`: This is an object representing a process instance
+   * that has been started by the message. It contains information about the process
+   * instance such as its ID, name, and current state.
+   * 	- `isEnded()`: This is a boolean property that indicates whether the process
+   * instance has ended or not. If the process instance is ended, then the function has
+   * successfully completed.
+   * 
+   * The output of the function can be destructured by accessing the properties of the
+   * `ProcessInstance` object using dot notation. For example, to access the ID of the
+   * process instance, one can use `instance.getId()`.
    */
   public ProcessInstance startProcessByMessage(String messageName, String businessKey, Map<String, Object> processVariables) {
     assertCommandContextNotActive();
@@ -479,11 +507,11 @@ public class BusinessProcess implements Serializable {
    *          if no such execution exists
    */
   /**
-   * retrieves an Execution instance based on its ID and associates it with a variable
-   * called `associationManager`.
+   * retrieves an execution instance from the process engine based on its ID, and sets
+   * it as the current execution managed by the association manager.
    * 
-   * @param executionId id of an execution for which the method will associate the given
-   * execution with it.
+   * @param executionId ID of the execution to be associated with the given
+   * association manager.
    */
   public void associateExecutionById(String executionId) {
     Execution execution = processEngine.getRuntimeService()
@@ -502,8 +530,8 @@ public class BusinessProcess implements Serializable {
    * @see #associateExecutionById(String)
    */
   /**
-   * checks if an execution ID is present in the association manager, indicating a
-   * connection to another component.
+   * checks if an execution ID is provided by association manager. If it is, the function
+   * returns `true`, otherwise it returns `false`.
    * 
    * @returns a boolean value indicating whether an execution ID is present.
    */
@@ -524,8 +552,8 @@ public class BusinessProcess implements Serializable {
    *           if the activiti command fails
    */
   /**
-   * is used to signal an execution in a process engine, associating and disassociating
-   * variables with the execution and clearing cached variable maps.
+   * asserts execution association, sets local variables on a process instance, signals
+   * the associated event, and disassociates the execution from its parent process.
    */
   public void signalExecution() {
     assertExecutionAssociated();
@@ -540,11 +568,11 @@ public class BusinessProcess implements Serializable {
    * In addition, this method allows to end the current conversation
    */
   /**
-   * executes a specific action or event and ends a conversation, depending on a provided
-   * boolean parameter.
+   * signals the end of a conversation instance, if the argument `endConversation` is
+   * true.
    * 
-   * @param endConversation conclusion of a conversation and invokes the `end()` method
-   * on the `conversationInstance` object when set to `true`.
+   * @param endConversation conclusion of a conversation, which is implemented by calling
+   * the `end()` method on the `conversationInstance`.
    */
   public void signalExecution(boolean endConversation) {
     signalExecution();
@@ -568,27 +596,27 @@ public class BusinessProcess implements Serializable {
    *           if no such task is found
    */
   /**
-   * retrieves a task by ID, creates it if not found, and associates its execution with
-   * the given ID.
+   * retrieves a task by ID, creates a new task if none exists with that ID, and
+   * associates the execution with the task.
    * 
-   * @param taskId ID of the task to be resumed, and is used to retrieve the corresponding
-   * task object from the process engine's task service.
+   * @param taskId id of the task to be resumed, and it is used to retrieve the task
+   * from the process engine or to create a new task if it does not exist.
    * 
    * @returns a reference to the task with the specified ID, or an exception if the
    * task does not exist.
    * 
-   * 	- `currentTask`: The current task being processed, which is retrieved from the `associationManager`.
-   * 	- `taskId`: The ID of the task being started, which is passed as a parameter to
-   * the function.
-   * 	- `task`: The newly created task instance, which is returned if the task with the
-   * provided ID does not exist or if the function successfully associates the task
-   * with an execution.
-   * 	- `executionId`: The ID of the execution associated with the task, which is
-   * retrieved from the `associationManager`.
+   * The function returns a `Task` object, which represents a task instance in the
+   * process engine. The `Task` object has several attributes, including `id`, `name`,
+   * `description`, `owner`, `priority`, and `status`.
    * 
-   * In summary, the `startTask` function retrieves the current task being processed,
-   * checks if a task with the provided ID exists, and creates a new task instance if
-   * necessary. It also associates the task with an execution and returns the task instance.
+   * The `id` attribute is a unique identifier for the task, while `name` and `description`
+   * provide a human-readable name and description of the task. The `owner` attribute
+   * specifies the user who created or assigned the task, while `priority` represents
+   * the task's priority level. Finally, the `status` attribute indicates the current
+   * state of the task, such as "active" or "completed".
+   * 
+   * Overall, the `startTask` function returns a Task object that contains essential
+   * information about the task instance being started.
    */
   public Task startTask(String taskId) {
     Task currentTask = associationManager.getTask();
@@ -610,22 +638,22 @@ public class BusinessProcess implements Serializable {
    * this method allows to start a conversation if no conversation is active
    */
   /**
-   * initializes a task and initiates a conversation if required.
+   * begins a task conversation if necessary and then starts the task with the specified
+   * ID.
    * 
-   * @param taskId identifier of the task to be started, which is passed as an argument
-   * to the `startTask()` method for identification purposes.
+   * @param taskId unique identifier for the task to be started.
    * 
-   * @param beginConversation beginConversation method of a conversation object, which
-   * determines whether to start a new conversation or continue an existing one.
+   * @param beginConversation state of conversations, with a value of `true` indicating
+   * that a conversation should be initiated if it is transient, and a value of `false`
+   * otherwise.
    * 
-   * @returns a Task object containing the result of starting the task.
+   * @returns a Task object, which represents the task to be executed.
    * 
-   * 	- The input `taskId` is used to identify a specific task instance.
-   * 	- The parameter `beginConversation` indicates whether a conversation should be
-   * initiated for the task. If `true`, a new conversation instance is created and
-   * began; otherwise, the existing conversation instance is used.
-   * 	- The function call `startTask(taskId)` performs the actual task execution,
-   * returning the task output.
+   * 	- The task ID is passed as an argument in the function call.
+   * 	- The function checks whether the conversation is transient or not before beginning
+   * it.
+   * 	- If the conversation is transient, the function begins it.
+   * 	- The function then returns the `startTask` method's output, which is a Task object.
    */
   public Task startTask(String taskId, boolean beginConversation) {
     if(beginConversation) {
@@ -650,8 +678,8 @@ public class BusinessProcess implements Serializable {
    *           if the activiti command fails
    */
   /**
-   * 1) verifies the task association, 2) sets local and remote variable values for the
-   * task, 3) completes the task, and 4) disassociates the task from its parent process.
+   * completes a task by setting local and inherited variable values, disassociating
+   * an associated task, and marking the task as completed in the process engine.
    */
   public void completeTask() {
     assertTaskAssociated();
@@ -668,10 +696,10 @@ public class BusinessProcess implements Serializable {
    *
    */
   /**
-   * completes a task and ends a conversation if the parameter `endConversation` is set
-   * to true.
+   * completes a task and ends a conversation if the parameter `endConversation` is true.
    * 
-   * @param endConversation conclusion of a dialogue.
+   * @param endConversation conclusion of an ongoing conversation, triggering the
+   * termination of the related conversation instance when set to `true`.
    */
   public void completeTask(boolean endConversation) {
     completeTask();
@@ -681,8 +709,8 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * checks if a task is associated with an object by checking the value of
-   * `associationManager.getTask()`. If the task is not null, then it is associated.
+   * checks if a task is associated with an entity by checking the value returned by
+   * the `associationManager.getTask()` method.
    * 
    * @returns a boolean value indicating whether a task is associated with the current
    * execution.
@@ -698,10 +726,9 @@ public class BusinessProcess implements Serializable {
    *
    */
   /**
-   * saves a task in the Process Engine by first checking if the command context is not
-   * active and if the task is associated with the process. Once these conditions are
-   * met, the function calls the `saveTask` method of the `TaskService` interface to
-   * save the task.
+   * validates that a command context is not active and that a task is associated with
+   * the current process instance. It then saves the task to the Process Engine's Task
+   * Service.
    */
   public void saveTask() {
     assertCommandContextNotActive();
@@ -724,7 +751,8 @@ public class BusinessProcess implements Serializable {
    * @throws ProcessEngineCdiException if called from a process engine command or if no Task is currently associated.
    */
   /**
-   * disassociates a task from its command context and asserts that the task is not active.
+   * 1) ensures the command context is not active, 2) verifies the task is associated
+   * with a command, and 3) disassociates the task from the command.
    */
   public void stopTask() {
     assertCommandContextNotActive();
@@ -747,9 +775,9 @@ public class BusinessProcess implements Serializable {
    * @throws ProcessEngineCdiException if called from a process engine command or if no Task is currently associated.
    */
   /**
-   * stops a task and ends a conversation if necessary.
+   * stops a task and ends a conversation, respectively.
    * 
-   * @param endConversation conversation instance which is ended if true.
+   * @param endConversation conversation instance which will end if it's set to `true`.
    */
   public void stopTask(boolean endConversation) {
     stopTask();
@@ -768,19 +796,20 @@ public class BusinessProcess implements Serializable {
    *         variable is set
    */
   /**
-   * retrieves a variable from an unspecified data source, checks if it's not null, and
-   * returns its value as a specified type (T).
+   * retrieves a variable from a source and returns it as an object of type `T`. If the
+   * variable is not found or its value is null, the function returns `null`.
    * 
-   * @param variableName name of a variable that is being searched for in the application's
-   * theme resources.
+   * @param variableName name of a variable that is retrieved from the component's state.
    * 
-   * @returns a reference to the specified variable's value, cast to the specified type
-   * `T`.
+   * @returns a typed value of type `T`, or `null` if the variable is not found.
    * 
-   * 	- The output is of type `T`, which is passed as a parameter to the function.
-   * 	- If the variable is not null, the value returned is the object value of the typed
-   * value.
-   * 	- If the variable is null, the output is set to null.
+   * The function returns an object of type `T`, which can be any subtype of `T`.
+   * The function first checks if the `TypedValue` object returned by `getVariableTyped`
+   * is null. If it is not null, the function proceeds to check if the value property
+   * of the TypedValue object is not null. If it is not null, the function returns a
+   * casted version of the value to the desired type `T`.
+   * If either of these conditions is true, the function returns an instance of `T`.
+   * Otherwise, the function returns `null`.
    */
   @SuppressWarnings("unchecked")
   public <T> T getVariable(String variableName) {
@@ -805,25 +834,19 @@ public class BusinessProcess implements Serializable {
    */
   /**
    * retrieves a `TypedValue` object associated with a given `String` variable name,
-   * returning its value as a generic type `T` if found, or `null` otherwise.
+   * casting it to the specified type (`T`) if found, or returning `null` otherwise.
    * 
-   * @param variableName name of a variable that is to be retrieved from the association
-   * manager.
+   * @param variableName name of the variable to be retrieved from the association manager.
    * 
-   * @returns a typed value of the specified variable name, or `null` if the variable
-   * is not found.
+   * @returns a TypedValue object of the specified type for the given variable name,
+   * or null if the variable is not found.
    * 
-   * 	- `T extends TypedValue`: This indicates that the returned value is of type
-   * `TypedValue`, which is an object that can hold a reference to any type of data,
-   * including primitive types and objects.
-   * 	- `variableName`: This parameter represents the name of the variable being retrieved.
-   * 	- `associationManager`: This parameter represents a component that manages
-   * associations between variables and values.
-   * 	- `(T) (variable)`: This line converts the `TypedValue` object to the specified
-   * type `T`, which is typically a subclass of `TypedValue`. This allows for more
-   * specific types to be retrieved from the variable.
-   * 	- `null`: If the variable is not found, this value is returned indicating that
-   * the variable does not exist or has no value associated with it.
+   * The function returns a `T` object, which represents a typed value.
+   * The input parameter `variableName` is used to retrieve a `TypedValue` object from
+   * the `associationManager`.
+   * If the `TypedValue` object is null, the function returns `null` (the absence of
+   * any value).
+   * Otherwise, the `TypedValue` object is cast to a `T` object using a narrowing conversion.
    */
   @SuppressWarnings("unchecked")
   public <T extends TypedValue> T getVariableTyped(String variableName) {
@@ -846,17 +869,17 @@ public class BusinessProcess implements Serializable {
    *
    */
   /**
-   * sets a variable within an association manager based on a given name and value.
+   * sets a variable in an association manager based on a given name and value.
    * 
-   * @param variableName name of the variable to be set.
+   * @param variableName name of a variable that is being set by the `associationManager`.
    * 
    * @param value object that will be stored as the value of the specified variable.
    * 
-   * 	- Type: The input `value` is an Object, which means it can hold any type of data.
-   * 	- Method: `associationManager.setVariable()` sets a variable in the associated
-   * management system.
-   * 	- Parameters: Two parameters are passed to `setVariable()` - `variableName` and
-   * `value`.
+   * 	- `Object value`: The object that contains the variable name and the value to be
+   * set.
+   * 	- `String variableName`: The name of the variable being set.
+   * 	- `associationManager`: An instance of an association manager, which manages the
+   * setting of variables.
    */
   public void setVariable(String variableName, Object value) {
     associationManager.setVariable(variableName, value);
@@ -870,17 +893,21 @@ public class BusinessProcess implements Serializable {
    * @since 7.3
    */
   /**
-   * retrieves and clears the cached variables map from the association manager, creating
-   * a new copy of the map for use.
+   * retrieves a copy of the cached variables, clears them, and returns the copy.
    * 
-   * @returns a copy of the cached variables map, which has been cleared of its contents.
+   * @returns a copy of the cached variables, which are then cleared from the cache.
    * 
-   * 	- The `VariableMap` object is created by passing an existing `VariableMap` to the
-   * `new VariableMapImpl()` constructor.
-   * 	- The `cachedVariables` field contains a copy of the cached variables that were
-   * previously associated with this association manager.
-   * 	- The `clear()` method is called on the `cachedVariables` field, which removes
-   * all variables from the cache.
+   * 1/ The returned output is a `VariableMap` instance, which represents a cache of
+   * variables associated with an association manager.
+   * 2/ The cache contains variable maps that have been previously fetched from the
+   * association manager using the `getCachedVariables` method.
+   * 3/ The returned map has the same properties and attributes as the original cached
+   * variables, including any associations or relationships between variables.
+   * 4/ The map is immutable, meaning its contents cannot be modified once it is created.
+   * 5/ The map is also read-only, meaning it cannot be modified through any means.
+   * 6/ The `getAndClearCachedVariableMap` function clears the cache of the variable
+   * map after returning a copy of it, ensuring that the cache remains up-to-date and
+   * efficient.
    */
   public VariableMap getAndClearCachedVariableMap() {
     VariableMap cachedVariables = associationManager.getCachedVariables();
@@ -896,18 +923,16 @@ public class BusinessProcess implements Serializable {
    * @deprecated use {@link #getAndClearCachedVariableMap()} instead
    */
   /**
-   * retrieves a map of cached variable values and clears them.
+   * retrieves and removes a cache of variable values.
    * 
-   * @returns a map of String to Object.
+   * @returns a map of cached variable values, which are cleared after retrieval.
    * 
-   * 1/ Map type: The output is a `Map` object of type `<String, Object>`, indicating
-   * that it contains key-value pairs where the keys are strings and the values can be
-   * any object type.
-   * 2/ Method name: The method name `getAndClearVariableCache` suggests that the
-   * function returns a map containing cached variables, and also clears those caches
-   * upon return.
-   * 3/ Return statement: The function returns the map of cached variables, indicating
-   * that the map is returned as its output.
+   * 	- The output is a map containing key-value pairs, where the keys are Strings and
+   * the values can be any type of object.
+   * 	- The map is returned by the function after getting variable cache and clearing
+   * it.
+   * 	- The function provides access to the variable cache through the map, allowing
+   * for efficient retrieval and removal of cached variables.
    */
   @Deprecated
   public Map<String, Object> getAndClearVariableCache() {
@@ -922,19 +947,20 @@ public class BusinessProcess implements Serializable {
    * @since 7.3
    */
   /**
-   * returns a `VariableMap` object containing cached variables obtained from the
-   * `associationManager.getCachedVariables()` method.
+   * retrieves a cached map of variables from the association manager and returns it
+   * as a `VariableMapImpl`.
    * 
    * @returns a `VariableMap` object containing the cached variables retrieved from the
    * association manager.
    * 
-   * 	- The output is of type `VariableMap`, which represents a map of variable names
-   * to values that have been cached by the associated association manager.
-   * 	- The map contains the cached variables retrieved from the associated association
-   * manager.
-   * 	- The cache is used to store the variables locally, allowing for faster access
-   * and manipulation of the variables without having to retrieve them from the originating
-   * source every time they are needed.
+   * 	- The output is a `VariableMapImpl` object. This class represents a map of
+   * variables, where each variable has an associated value.
+   * 	- The ` VariableMapImpl` object is created by calling the `getCachedVariables()`
+   * method of the `associationManager`. This method returns a collection of `Variable`
+   * objects that represent the variables associated with the current instance of the
+   * `AssociationManager`.
+   * 	- The returned `VariableMapImpl` object contains the same set of variables as the
+   * original `associationManager`, but the values may be cached or loaded from storage.
    */
   public VariableMap getCachedVariableMap() {
     return new VariableMapImpl(associationManager.getCachedVariables());
@@ -947,15 +973,19 @@ public class BusinessProcess implements Serializable {
    * @deprecated use {@link #getCachedVariableMap()} instead
    */
   /**
-   * retrieves a cached map of variables.
+   * retrieves a cached map containing variable values.
    * 
-   * @returns a map of string keys to object values, retrieved from the cached variable
-   * map.
+   * @returns a map of strings to objects.
    * 
-   * 	- The `Map` object returned is of type `<String, Object>`.
-   * 	- The map contains variable cache data that has been cached by the function.
-   * 	- The keys in the map are Strings representing the names of variables, while the
-   * values are Objects containing the variable values.
+   * The returned map contains key-value pairs representing variable cache entries. The
+   * keys are Strings, while the values can be of any type.
+   * 
+   * The map is immutable and thread-safe, meaning its contents cannot be changed once
+   * created, and it can be accessed concurrently by multiple threads without the need
+   * for synchronization.
+   * 
+   * Overall, this function provides a convenient way to retrieve variable cache entries
+   * in an organized manner.
    */
   @Deprecated
   public Map<String, Object> getVariableCache() {
@@ -970,21 +1000,20 @@ public class BusinessProcess implements Serializable {
    *         variable is set
    */
   /**
-   * retrieves a local variable from an Activity or Fragment, with type parameter `T`.
-   * If the variable is found and its value is not null, it returns a instance of `T`.
-   * Otherwise, it returns `null`.
+   * retrieves a variable from local storage with the given name and returns its value
+   * as an instance of the specified type (`T`). If the variable is null, it returns a
+   * null value of the same type.
    * 
-   * @param variableName name of a local variable to retrieve its value.
+   * @param variableName name of a local variable that is to be retrieved.
    * 
-   * @returns a typed variable of type `T`, or `null` if the variable is not found.
+   * @returns a `T` object representing the value of the specified variable, or `null`
+   * if the variable is not found or its value is ` null`.
    * 
-   * 	- `T`: The type of the variable being returned, which is inferred from the type
-   * of the value being passed in the `getVariableLocalTyped` method.
-   * 	- `variableName`: The name of the variable being retrieved.
-   * 	- `variable`: A `TypedValue` object containing information about the variable,
-   * including its type and the value it holds.
-   * 	- `value`: The actual value held by the variable, which is of the same type as
-   * the variable.
+   * 	- The output is of type `T`, which is a generic type parameter.
+   * 	- The function returns an object of type `T` if the variable exists and its value
+   * is not null. Otherwise, it returns `null`.
+   * 	- The function uses the `TypedValue` class to retrieve the variable's value, which
+   * ensures that the correct type is returned based on the variable's declared type.
    */
   @SuppressWarnings("unchecked")
   public <T> T getVariableLocal(String variableName) {
@@ -1008,21 +1037,25 @@ public class BusinessProcess implements Serializable {
    * @since 7.3
    */
   /**
-   * retrieves a typed value associated with a given variable name, returning the typed
-   * value if it exists, otherwise `null`.
+   * retrieves a `TypedValue` object associated with a given variable name, and returns
+   * it as a specified type (`T`). If the variable is not found, it returns `null`.
    * 
    * @param variableName name of the variable to be retrieved from the association manager.
    * 
-   * @returns a `TypedValue` object representing the value of the specified variable,
-   * or `null` if the variable does not exist.
+   * @returns a typed value of the specified type for the given variable name, or `null`
+   * if the variable is not found.
    * 
-   * 	- `T` is the parameterized type of the return value, which represents a typed value.
-   * 	- `variableName` is a string parameter representing the name of the variable to
-   * be retrieved.
-   * 	- `associationManager` is an object that provides access to the variable's
-   * association data.
-   * 	- The function returns a `TypedValue` object if the variable exists in the
-   * association data, or `null` otherwise.
+   * 	- `T extends TypedValue`: This indicates that the return type is a subclass of
+   * `TypedValue`, which suggests that the function may return a custom or specialized
+   * typed value.
+   * 	- `<T extends TypedValue>`: This type parameter indicates that the function can
+   * return any type that extends `TypedValue`.
+   * 	- `getVariableLocalTyped(String variableName)`: This is the method name, which
+   * describes the purpose of the function as retrieving a local variable with the given
+   * name.
+   * 	- `TypedValue variable = associationManager.getVariableLocal(variableName);`:
+   * This line declares the variable `variable` and assigns its value to it using the
+   * `getVariableLocal` method provided by the `associationManager`.
    */
   @SuppressWarnings("unchecked")
   public <T extends TypedValue> T getVariableLocalTyped(String variableName) {
@@ -1045,18 +1078,19 @@ public class BusinessProcess implements Serializable {
    *
    */
   /**
-   * sets a variable locally in the calling class. It passes the variable name and value
-   * to the associated manager for storage in the local scope.
+   * sets a local variable in the associated manager instance.
    * 
-   * @param variableName name of a variable to be set locally within the calling scope.
+   * @param variableName name of a local variable to be set by the `associationManager`.
    * 
-   * @param value object to be assigned to the variable named `variableName`.
+   * @param value object that will be set as the local variable with the given `variableName`.
    * 
-   * The `value` argument is an instance of `Object`, which can hold any type of data.
-   * It may have various attributes or properties that can be accessed using methods
-   * such as `getClass()`, `getMethod()`, or `toString()`.
-   * These methods can provide additional information about the object, such as its
-   * class name, method names, or a string representation.
+   * 	- The type of `value` is determined by its class hierarchy, which can be a subclass
+   * of `java.io.Serializable`.
+   * 	- If `value` is an instance of a serializable class, then it can be deserialized
+   * from a binary stream or string representation using the `readObject()` method of
+   * the `ObjectStreamClass` class.
+   * 	- The `value` object may also have additional attributes and methods defined in
+   * its class hierarchy, which can be accessed and used as needed within the function.
    */
   public void setVariableLocal(String variableName, Object value) {
     associationManager.setVariableLocal(variableName, value);
@@ -1070,18 +1104,18 @@ public class BusinessProcess implements Serializable {
    * @since 7.3
    */
   /**
-   * retrieves a cached variable map from an association manager and creates a new copy
-   * of it, then clears the original cache.
+   * retrieves and returns a copy of the local variable map from the association manager,
+   * while also clearing the original map to avoid accumulating unnecessary data.
    * 
-   * @returns a new VariableMap instance containing the same values as the cached
-   * LocalVariables, but with the original values cleared.
+   * @returns a new VariableMap containing the local variables from the cache, with any
+   * previously cached local variables cleared.
    * 
-   * 	- The VariableMap cachedVariablesLocal contains a copy of the local variables
-   * that were previously cached by the association manager.
-   * 	- The new VariableMap copy created in the function is an instance of the
-   * VariableMapImpl class, which represents a map of variables with their values.
-   * 	- The cachedVariablesLocal map is cleared in the function, effectively removing
-   * any previously stored variable values.
+   * 	- `VariableMap cachedVariablesLocal`: A map that stores the local variables
+   * associated with their corresponding values.
+   * 	- `VariableMap copy`: A new instance of `VariableMapImpl`, created by copying the
+   * contents of `cachedVariablesLocal`.
+   * 	- `cachedVariablesLocal.clear()`: Clears the contents of `cachedVariablesLocal`,
+   * effectively removing all the local variables associated with their values.
    */
   public VariableMap getAndClearCachedLocalVariableMap() {
     VariableMap cachedVariablesLocal = associationManager.getCachedLocalVariables();
@@ -1097,17 +1131,17 @@ public class BusinessProcess implements Serializable {
    * @deprecated use {@link #getAndClearCachedLocalVariableMap()} instead
    */
   /**
-   * retrieves a map of local variable cache and clears it.
+   * retrieves a map of local variable cache and clears it after use.
    * 
-   * @returns a map of string keys to object values, which is cleared after being retrieved.
+   * @returns a map of strings to objects.
    * 
-   * 1/ Type: The output is a map data type, specifically a `Map` object containing
-   * key-value pairs representing local variable cache entries.
-   * 2/ Contents: The map contains entries for variables that are locally cached in
-   * memory, with each entry representing a single variable and its associated value.
-   * 3/ Lifespan: The map is created and cleared locally within the function, and its
-   * contents are only valid during the execution of the function. Once the function
-   * returns, the map is no longer valid.
+   * 	- Map: The output is of type `Map`, which is an object that stores key-value pairs.
+   * 	- String keys: The keys in the map are strings.
+   * 	- Object values: The values in the map can be any object type.
+   * 	- getAndClearCachedLocalVariableMap(): This method is used to retrieve a cache
+   * of local variables, and then clear it.
+   * 
+   * The properties of the output are summarized above.
    */
   @Deprecated
   public Map<String, Object> getAndClearVariableLocalCache() {
@@ -1122,19 +1156,13 @@ public class BusinessProcess implements Serializable {
    * @since 7.3
    */
   /**
-   * retrieves a cached map of local variables associated with an association manager,
-   * which is then returned as a new VariableMap object.
+   * returns a cached map of local variables associated with an association manager.
    * 
-   * @returns a `VariableMap` object containing the locally cached variables.
+   * @returns a `VariableMap` object containing the cached local variables.
    * 
-   * 	- The output is a VariableMap object representing a cache of local variables for
-   * association management.
-   * 	- The map contains key-value pairs where the keys are variable names and the
-   * values are associations.
-   * 	- Each association is represented by an Association object, which contains
-   * information about the variable pairings.
-   * 	- The associations in the map are immutable, meaning they cannot be modified once
-   * created.
+   * 	- The VariableMap object is created using the `new VariableMapImpl` constructor.
+   * 	- The map contains the cached local variables retrieved from the `associationManager`.
+   * 	- The map is an immutable instance, meaning it cannot be modified once created.
    */
   public VariableMap getCachedLocalVariableMap() {
     return new VariableMapImpl(associationManager.getCachedLocalVariables());
@@ -1147,16 +1175,14 @@ public class BusinessProcess implements Serializable {
    * @deprecated use {@link #getCachedLocalVariableMap()} instead
    */
   /**
-   * retrieves a map of local variables cached through the `getCachedLocalVariableMap`
+   * retrieves a map of local variables cached using the `getCachedLocalVariableMap()`
    * method.
    * 
-   * @returns a map containing the local variable cache.
+   * @returns a map of strings to objects containing locally cached variables.
    * 
-   * 	- It is a map containing key-value pairs with the keys being Strings and values
-   * being Objects.
-   * 	- The map is created using the method `getCachedLocalVariableMap()` which is deprecated.
-   * 	- The contents of the map are not specified, but it can contain any data that has
-   * been cached locally using the `putLocalVariable` method.
+   * 	- The function returns a map of type String to Object.
+   * 	- The map contains local variable cache data.
+   * 	- The map is generated by calling another function named `getCachedLocalVariableMap()`.
    */
   @Deprecated
   public Map<String, Object> getVariableLocalCache() {
@@ -1183,8 +1209,8 @@ public class BusinessProcess implements Serializable {
    * @throws ProcessEngineCdiException if called from a process engine command or if neither a Task nor an Execution is associated.
    */
   /**
-   * clears variable cache entries associated with an Association Manager, which manages
-   * relationships between objects in a Java application.
+   * clears the variable cache managed by the association manager, releasing any cached
+   * data and improving performance by reducing the load on memory.
    */
   public void flushVariableCache() {
     associationManager.flushVariableCache();
@@ -1201,16 +1227,12 @@ public class BusinessProcess implements Serializable {
    * @see #startTask(String)
    */
   /**
-   * sets the Task ID for which it starts a task.
+   * sets the value of the `Task` object to a new reference, and starts the associated
+   * task by calling the `startTask` function with the task ID as an argument.
    * 
-   * @param task task to be started, and when passed to the
-   * `startTask()` method, it triggers the
-   * invocation of that method with the task ID as
-   * its argument.
+   * @param task `Task` object to be started.
    * 
-   * 	- `getId()`: returns the unique identifier of the task
-   * 	- ... (omitted): other properties/attributes of `task` may be accessed and
-   * manipulated within the function.
+   * 	- `getId()` returns the unique identifier of the task.
    */
   public void setTask(Task task) {
     startTask(task.getId());
@@ -1220,11 +1242,11 @@ public class BusinessProcess implements Serializable {
    * @see #startTask(String)
    */
   /**
-   * sets the `taskId` field of an object, triggering the `startTask` function to
-   * initiate the task associated with the provided `taskId`.
+   * sets the `taskId` field of an object, triggering the `startTask` function to begin
+   * the task associated with the given `taskId`.
    * 
-   * @param taskId identity of the task being assigned to the instance, and it is used
-   * to trigger the starting of the task within the method `startTask(String)`.
+   * @param taskId identifier of a task to be started by the `startTask()` method call
+   * within the `setTaskId()` function.
    */
   public void setTaskId(String taskId) {
     startTask(taskId);
@@ -1234,14 +1256,12 @@ public class BusinessProcess implements Serializable {
    * @see #associateExecutionById(String)
    */
   /**
-   * associates an execution with a given ID using the `associateExecutionById()` method.
+   * associates an execution with the system by using its ID.
    * 
-   * @param execution execution to be associated with the current instance of the class,
-   * as indicated by its `id`.
+   * @param execution execution to be associated with the method caller, and is linked
+   * to its identifier through the `associateExecutionById()` method call.
    * 
-   * 	- `getId()`: Returns the unique ID of the execution.
-   * 	- `associateExecutionById(id)`: Associates the execution with its corresponding
-   * ID.
+   * 	- The `getId()` method returns the unique identifier for this execution instance.
    */
   public void setExecution(Execution execution) {
     associateExecutionById(execution.getId());
@@ -1251,11 +1271,11 @@ public class BusinessProcess implements Serializable {
    * @see #associateExecutionById(String)
    */
   /**
-   * sets the execution ID of an object by associating it with a given ID.
+   * sets an execution ID for a task.
    * 
-   * @param executionId unique identifier of an execution, which is associated with the
-   * current execution by the `associateExecutionById()` method call within the
-   * `setExecutionId()` function.
+   * @param executionId unique identifier for an execution within the system, which is
+   * associated with the current instance of the object by the `associateExecutionById()`
+   * method call.
    */
   protected void setExecutionId(String executionId) {
     associateExecutionById(executionId);
@@ -1265,11 +1285,10 @@ public class BusinessProcess implements Serializable {
    * Returns the id of the currently associated process instance or 'null'
    */
   /**
-   * retrieves the process instance ID of the current execution, or returns `null` if
-   * no execution is available.
+   * returns the process instance ID of a given execution, or `null` if the execution
+   * is not provided.
    * 
-   * @returns a string representing the process instance ID of the current execution,
-   * or `null` if no execution is active.
+   * @returns a string representing the process instance ID of the executing process.
    */
   public String getProcessInstanceId() {
     Execution execution = associationManager.getExecution();
@@ -1277,13 +1296,14 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * Returns the id of the task associated with the current conversation or 'null'.
+   * Returns the id of the process associated with the current lie or '0'.
    */
   /**
-   * retrieves the ID of a task based on the task retrieved from the `getTask()` function.
-   * If no task is returned, the function returns `null`.
+   * returns the ID of a task associated with the current user, retrieved from a database
+   * or other data source. If no task is found, the function returns `null`.
    * 
-   * @returns a string representing the task ID if a task is present, otherwise `null`.
+   * @returns a string representing the task ID of the task retrieved from the `getTask`
+   * method, or `null` if no task was retrieved.
    */
   public String getTaskId() {
     Task task = getTask();
@@ -1299,16 +1319,13 @@ public class BusinessProcess implements Serializable {
    *
    */
   /**
-   * retrieves a task object from an association manager.
+   * retrieves a task from an association manager.
    * 
-   * @returns a task object.
+   * @returns a task object retrieved from the association manager.
    * 
-   * 	- The output is an instance of the `Task` class, which represents a task in the
-   * system.
-   * 	- The `Task` class has several attributes and methods that can be used to manipulate
-   * or query the task.
-   * 	- The specific properties and attributes of the `Task` class depend on the
-   * implementation of the `associationManager` class and the requirements of the application.
+   * 	- The function returns an instance of the `Task` class.
+   * 	- The `Task` object represents a task that is associated with an association manager.
+   * 	- The object has various attributes, such as a name, description, and due date.
    */
   public Task getTask() {
     return associationManager.getTask();
@@ -1318,17 +1335,18 @@ public class BusinessProcess implements Serializable {
    * Returns the currently associated execution  or 'null'
    */
   /**
-   * retrieves an execution object from an association manager, which is likely used
-   * to manage dependencies between objects in a Java application.
+   * retrieves an execution object from the association manager, indicating that it
+   * returns a reference to an execution object.
    * 
-   * @returns an instance of the `Execution` class.
+   * @returns an execution object representing the current state of the application's
+   * execution.
    * 
-   * The output is an instance of the `Execution` class, which represents a single
-   * execution of a workflow.
-   * The `Execution` object contains various attributes, such as the ID of the execution,
-   * the workflow ID, the creation time, and the current state.
-   * These attributes provide information about the status of the execution and can be
-   * used to manage and monitor the workflow.
+   * 	- The `associationManager` field represents an instance of the `AssociationManager`
+   * class, which manages associations between objects in the program.
+   * 	- The `getExecution()` method returns the current execution associated with the
+   * `associationManager`.
+   * 	- The execution object contains information about the current execution, such as
+   * its ID, started time, and status.
    */
   public Execution getExecution() {
     return associationManager.getExecution();
@@ -1338,11 +1356,11 @@ public class BusinessProcess implements Serializable {
    * @see #getExecution()
    */
   /**
-   * retrieves the execution ID associated with a given execution object, returning
-   * `null` if the execution is null or not found.
+   * retrieves the execution ID of a given execution, returning `null` if the execution
+   * is null.
    * 
-   * @returns a string representing the execution ID of the current execution or null
-   * if no execution is currently running.
+   * @returns a string representing the execution ID of the current execution, or `null`
+   * if no execution ID is available.
    */
   public String getExecutionId() {
     Execution e = getExecution();
@@ -1357,20 +1375,20 @@ public class BusinessProcess implements Serializable {
    *           {@link #isAssociated()} to check whether an association exists.
    */
   /**
-   * retrieves a process instance from the process engine by its ID, checking if it's
-   * not the same as the execution ID and returning the result after querying the runtime
-   * service.
+   * retrieves a process instance associated with an execution, either by Id or by
+   * process instance Id. If no matching process instance is found, it creates a new
+   * one based on the execution's information.
    * 
-   * @returns a `ProcessInstance` object representing the process instance with the
-   * given ID.
+   * @returns a `ProcessInstance` object representing the process instance identified
+   * by the `execution.getProcessInstanceId()`.
    * 
-   * 	- The function returns a `ProcessInstance` object representing the process instance
-   * associated with the given execution.
-   * 	- If the input execution does not have a process instance ID that matches its ID,
-   * the function creates a new process instance query and returns the single resulting
-   * process instance using the execution's process instance ID.
-   * 	- Otherwise, the function returns the input execution directly as a `ProcessInstance`
-   * object.
+   * 	- The function first checks whether the execution ID matches the process instance
+   * ID. If it doesn't, then a query is created to retrieve the process instance with
+   * the matching ID.
+   * 	- The function returns a single result from the query using the `singleResult()`
+   * method.
+   * 	- The output is a `ProcessInstance` object representing the process instance with
+   * the matching ID.
    */
   public ProcessInstance getProcessInstance() {
     Execution execution = getExecution();
@@ -1387,8 +1405,8 @@ public class BusinessProcess implements Serializable {
   // internal implementation //////////////////////////////////////////////////////////
 
   /**
-   * checks if an execution is associated with a process instance, and throws an exception
-   * if it's null.
+   * verifies if an execution is associated with a process instance, and raises a
+   * `ProcessEngineCdiException` if not.
    */
   protected void assertExecutionAssociated() {
     if (associationManager.getExecution() == null) {
@@ -1397,8 +1415,8 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * checks if a task is associated with the process, and throws an exception if no
-   * task is found.
+   * verifies that a task is associated with the process instance, and if not, throws
+   * an exception indicating to call `businessProcess.startTask()` first.
    */
   protected void assertTaskAssociated() {
     if (associationManager.getTask() == null) {
@@ -1407,7 +1425,8 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * verifies that the Command Context is not active before allowing the method to proceed.
+   * checks if the `Context.getCommandContext()` is null, and if it isn't, it throws a
+   * `ProcessEngineCdiException`.
    */
   protected void assertCommandContextNotActive() {
     if(Context.getCommandContext() != null) {
