@@ -37,13 +37,13 @@ public class BusinessProcess implements Serializable {
   @Inject private Instance<Conversation> conversationInstance;
 
   /**
-   * starts a process instance based on a given process definition ID, retrieves the
-   * latest state from the process engine, and sets the execution variable to reference
-   * the started instance.
+   * starts a process instance with the provided process definition ID and sets the
+   * execution variable for the started instance.
    * 
-   * @param processDefinitionId identifier of the process definition to start.
+   * @param processDefinitionId unique identifier of the process definition that is to
+   * be started.
    * 
-   * @returns a `ProcessInstance` object representing the started process.
+   * @returns a `ProcessInstance` object containing information about the started process.
    */
   public ProcessInstance startProcessById(String processDefinitionId) {
     assertCommandContextNotActive();
@@ -56,15 +56,17 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by its ID and business key, checks if it's already ended,
-   * and sets the execution object if not.
+   * starts a process instance with the given ID and business key using the process
+   * engine's `startProcessInstanceById` method, sets the execution variable, and returns
+   * the started instance.
    * 
-   * @param processDefinitionId identity of the process definition to start.
+   * @param processDefinitionId id of the process definition to start.
    * 
    * @param businessKey business key of the process instance to be started, which is
-   * used to identify the process instance in the process engine.
+   * used to identify the specific process instance to be executed by the
+   * `startProcessInstanceById` method.
    * 
-   * @returns a `ProcessInstance` object containing the started process instance details.
+   * @returns a `ProcessInstance` object representing the started process.
    */
   public ProcessInstance startProcessById(String processDefinitionId, String businessKey) {
     assertCommandContextNotActive();
@@ -77,16 +79,16 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by id, updating the variables map and then calling the
-   * `startProcessInstanceById` method of the process engine to initiate the process.
+   * starts a process instance with the given ID using the process engine's
+   * `startProcessInstanceById` method. It also sets the execution of the instance if
+   * it is not already ended.
    * 
    * @param processDefinitionId ID of the process definition to start.
    * 
-   * @param variables map of variables to be passed as arguments to the started process
-   * instance, which are then made available to the process instance through the
-   * `cachedVariables` variable map.
+   * @param variables map of variables to be passed to the started process instance,
+   * which are then made available to the process instance through its variable scope.
    * 
-   * @returns a `ProcessInstance` object representing the started process.
+   * @returns a `ProcessInstance` object containing information about the started process.
    */
   public ProcessInstance startProcessById(String processDefinitionId, Map<String, Object> variables) {
     assertCommandContextNotActive();
@@ -101,21 +103,17 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance with the specified ID, business key, and variables. It
-   * retrieves the cached variables, updates them with the provided ones, and then
-   * starts the process instance using the `getRuntimeService().startProcessInstanceById()`
-   * method. If the instance is not ended, it sets the execution to the newly started
-   * instance.
+   * starts a process instance by its ID, passing variables to be used as context and
+   * setting the execution.
    * 
-   * @param processDefinitionId identifier of the process definition to start.
+   * @param processDefinitionId id of the process definition to start.
    * 
-   * @param businessKey unique identifier of the business process instance to be started,
-   * which is used by the `processEngine.getRuntimeService().startProcessInstanceById()`
-   * method to locate the correct process definition and start the instance.
+   * @param businessKey unique identifier of the business process that the given process
+   * definition belongs to, which is required for starting the process instance in ProcessKit.
    * 
-   * @param variables map of variables to be used when starting the process instance,
-   * which is added to the existing cached variables and then passed to the
-   * `startProcessInstanceById()` method.
+   * @param variables map of variables to be passed to the started process instance,
+   * which is used to update the cache of variable maps and then provided to the
+   * `startProcessInstanceById` method.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -132,11 +130,11 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by its key in the process engine, retrieves the processed
-   * instance if it is not ended, sets the execution to the instance, and returns the
-   * instance.
+   * starts a process instance by its key, verifies the command context is not active,
+   * retrieves the instance from the engine, sets the execution variable if it's not
+   * ended, and returns the instance.
    * 
-   * @param key unique identifier of the process instance to be started.
+   * @param key process instance key to start.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -151,16 +149,16 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by key and business key, checks if it is ended, sets
-   * execution to the started instance and returns it.
+   * starts a process instance by its key and business key, checks if it is ended, and
+   * sets the execution variable to the returned instance if it is not ended.
    * 
-   * @param key process instance key to be started.
+   * @param key unique process instance ID to start.
    * 
-   * @param businessKey business key of the process instance to be started, which is
-   * used to identify the specific process instance to be activated by the `startProcessByKey()`
-   * method.
+   * @param businessKey unique identifier of the business process associated with the
+   * given process instance key, which is used to retrieve the correct process instance
+   * from the process engine.
    * 
-   * @returns a `ProcessInstance` object representing the started process.
+   * @returns a `ProcessInstance` object representing the started process instance.
    */
   public ProcessInstance startProcessByKey(String key, String businessKey) {
     assertCommandContextNotActive();
@@ -173,16 +171,12 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by its key and passes variables to it. It first checks
-   * if the command context is active, then gets and clears the cached variable map,
-   * puts all the given variables into it, starts the process instance using the
-   * `startProcessInstanceByKey` method of the process engine, and sets the execution
-   * of the instance if it's not ended.
+   * starts a process instance by key, using the given variables and checking if the
+   * instance is already ended before setting its execution status.
    * 
-   * @param key identifier of the process instance to start.
+   * @param key process instance key that is being activated or started.
    * 
-   * @param variables map of variables to be passed to the started process instance,
-   * which is stored in the `cachedVariables` map and used to initialize the process instance.
+   * @param variables map of variable values that will be used to start the process instance.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -199,18 +193,17 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance based on its key and associated business key, and passes
-   * variables to the start process command.
+   * starts a process instance by key, updating the variables cache and setting the
+   * execution state if necessary. It returns the started instance.
    * 
-   * @param key unique process instance key to be started.
+   * @param key unique process instance key that identifies the specific process instance
+   * to be started.
    * 
    * @param businessKey business key of the process instance to be started, which is
-   * used by the `startProcessInstanceByKey` method to identify the correct process
-   * instance to start.
+   * used to identify the process instance to be started in the process engine.
    * 
-   * @param variables map of variables to be used when starting a process instance by
-   * its key, and it is passed to the `processEngine.getRuntimeService().startProcessInstanceByKey()`
-   * method for injection into the process instance.
+   * @param variables map of variables to pass to the ProcessInstance when starting it
+   * by key, which can be used to initialize the process instance with additional data.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -227,12 +220,15 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by sending a message to the process engine, retrieves
-   * the created instance, and sets its execution status.
+   * starts a process instance by sending a message to the process engine, using the
+   * given message name and caching any variables retrieved from the context. It then
+   * sets the execution status of the created instance to "in progress" or "ended",
+   * depending on whether it was successfully started or not.
    * 
-   * @param messageName name of the message to start the process instance with.
+   * @param messageName message to be executed when starting a process instance using
+   * the `startProcessInstanceByMessage()` method of the process engine.
    * 
-   * @returns a `ProcessInstance` object representing the started process.
+   * @returns a ProcessInstance object representing the started process.
    */
   public ProcessInstance startProcessByMessage(String messageName) {
     assertCommandContextNotActive();
@@ -246,16 +242,13 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance by sending a message to the process engine, passing in
-   * the name of the message and any necessary variable values.
+   * starts a new process instance by sending a message to the process engine, using
+   * the provided message name and process variables.
    * 
-   * @param messageName name of the message that initiates the process instance, which
-   * is passed to the `startProcessInstanceByMessage()` method of the Process Engine
-   * to start a new process instance based on the specified message.
+   * @param messageName name of the message to be started as a process instance.
    * 
-   * @param processVariables variables that will be used by the process instance when
-   * it is started, and gets added to the cache of variable map before starting the
-   * process instance.
+   * @param processVariables variable values that will be used to start a process
+   * instance when the `startProcessByMessage` function is called.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -272,20 +265,20 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a process instance based on a message name and business key, passing variable
-   * maps as parameters to the process engine's `startProcessInstanceByMessage` method.
-   * It retrieves and clears the cached variables before starting the instance and sets
-   * the execution status accordingly.
+   * starts a process instance by sending a message to the process engine, passing in
+   * the name of the message, the business key, and any necessary process variables.
+   * The function retrieves the cached variable map, adds any new process variables,
+   * and then calls the `startProcessInstanceByMessage` method on the process engine
+   * to start the instance.
    * 
-   * @param messageName name of the message to start the process instance.
+   * @param messageName name of the message that will be triggered when the process is
+   * started.
    * 
-   * @param businessKey unique identifier for a specific business process, which is
-   * used to identify the correct process instance to start when calling the
-   * `startProcessByMessage()` method.
+   * @param businessKey business key of the process instance that is being started,
+   * which is used to identify the process instance within the process engine.
    * 
-   * @param processVariables variables to be passed to the started process instance,
-   * which are added to the existing variable map of the current execution context
-   * before starting the process.
+   * @param processVariables map of process variables that will be used to start the
+   * process instance.
    * 
    * @returns a `ProcessInstance` object representing the started process.
    */
@@ -303,11 +296,12 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * associates an execution with a given ID to a process instance. It retrieves the
-   * execution from the repository based on the ID, and sets the execution object to
-   * the association manager for further processing.
+   * retrieves an execution from the process engine based on its ID, sets it as the
+   * association manager's execution, and throws a `ProcessEngineCdiException` if no
+   * matching execution is found.
    * 
-   * @param executionId identifier of an execution to be associated with the given `associationManager`.
+   * @param executionId unique identifier of the execution to be associated with the
+   * current execution.
    */
   public void associateExecutionById(String executionId) {
     Execution execution = processEngine.getRuntimeService()
@@ -332,12 +326,10 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * is used to indicate that a conversation should end or continue. When `endConversation`
-   * is true, the function ends the conversation instance, otherwise it continues the
-   * conversation.
+   * triggers the termination of a conversation instance upon receiving the signal.
    * 
-   * @param endConversation conclusion of an active conversation with the AI assistant,
-   * as it triggers the termination of the conversation instance.
+   * @param endConversation conclusion of the conversation, triggering the execution
+   * to end when set to `true`.
    */
   public void signalExecution(boolean endConversation) {
     signalExecution();
@@ -349,14 +341,12 @@ public class BusinessProcess implements Serializable {
   // -------------------------------------
 
   /**
-   * retrieves a task based on its ID and sets it as the current task in the association
-   * manager. If the task is not found, an exception is thrown. The function also
-   * associates the execution with the task's ID.
+   * retrieves a task by ID, creates a new task if none exists with the provided ID,
+   * and associates the execution with the newly created or retrieved task.
    * 
    * @param taskId id of the task to be resumed.
    * 
-   * @returns a reference to the task with the specified ID, or an exception if the
-   * task does not exist.
+   * @returns a reference to the specified task.
    */
   public Task startTask(String taskId) {
     Task currentTask = associationManager.getTask();
@@ -373,15 +363,15 @@ public class BusinessProcess implements Serializable {
   }
 
   /**
-   * starts a task with the given ID, and if the parameter `beginConversation` is true,
-   * it also begins a conversation if one does not already exist.
+   * starts a task identified by `taskId`. If `beginConversation` is `true`, it also
+   * begins a conversation if one is not already running.
    * 
-   * @param taskId id of the task to be started.
+   * @param taskId unique identifier of the task to be started.
    * 
-   * @param beginConversation initialization of a conversation instance, which determines
-   * whether or not the conversation should be initiated when the task is started.
+   * @param beginConversation begin conversation method of the Conversation instance
+   * when it is called with true value.
    * 
-   * @returns a task handle that can be used to query the status of the task.
+   * @returns a task instance.
    */
   public Task startTask(String taskId, boolean beginConversation) {
     if(beginConversation) {
@@ -404,10 +394,10 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * completes a task and ends a conversation, if necessary.
+   * performs a task and ends a conversation if the argument `endConversation` is true.
    * 
-   * @param endConversation conclusion of an ongoing conversation, when set to true it
-   * ends the conversation instance.
+   * @param endConversation boolean value that determines whether or not to end a
+   * conversation instance when the `completeTask()` method is called.
    */
   public void completeTask(boolean endConversation) {
     completeTask();
@@ -439,10 +429,9 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * stops a task and ends a conversation if necessary.
+   * stops a task and ends a conversation, if requested.
    * 
-   * @param endConversation conclusion of the conversation, prompting the instance of
-   * the conversation to end when set to `true`.
+   * @param endConversation whether the task should end the conversation or not.
    */
   public void stopTask(boolean endConversation) {
     stopTask();
@@ -455,12 +444,14 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * retrieves a variable's value of type T from an activity's variables. If the variable
-   * is null, it returns null.
+   * retrieves a variable's value of specified type from the application context,
+   * returning the value as the requested type if found, or `null` otherwise.
    * 
-   * @param variableName name of a variable to be retrieved.
+   * @param variableName name of a variable to be retrieved from the application's
+   * variables cache.
    * 
-   * @returns a non-null object of type `T`, or `null` if no such variable exists.
+   * @returns a reference of type `T` to the value stored under the specified variable
+   * name, or `null` if the variable does not exist or has no value.
    */
   @SuppressWarnings("unchecked")
   public <T> T getVariable(String variableName) {
@@ -476,14 +467,13 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * retrieves a typed value associated with a given variable name, returning the typed
-   * value as a generic type T if found, or null otherwise.
+   * retrieves a `TypedValue` associated with a given `String` variable name, and returns
+   * it as a parameterized type `T`. If the variable is null, the function returns `null`.
    * 
-   * @param variableName name of a variable that is being retrieved from the association
-   * manager.
+   * @param variableName name of the variable to be retrieved from the association manager.
    * 
-   * @returns a typed value of the specified variable name, or `null` if the variable
-   * is not found.
+   * @returns a `TypedValue` object representing the specified variable, or `null` if
+   * it cannot be found.
    */
   @SuppressWarnings("unchecked")
   public <T extends TypedValue> T getVariableTyped(String variableName) {
@@ -493,9 +483,10 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * sets a variable in an association manager based on a given name and value.
+   * sets a variable's value provided by the user.
    * 
-   * @param variableName name of the variable to be set.
+   * @param variableName name of a variable that the `associationManager` will set the
+   * value of.
    * 
    * @param value object to be associated with the specified variable name.
    */
@@ -530,16 +521,13 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * retrieves the value of a variable with the given name from the local storage, and
-   * returns it as a specified type (T). If the variable is null or its value is null,
-   * it returns null.
+   * retrieves a local variable's value of type `T`. If the variable is not null and
+   * its value is not null, it returns a casted instance of `T`. Otherwise, it returns
+   * `null`.
    * 
-   * @param variableName name of a variable to be retrieved from the local scope, and
-   * it is used to retrieve the corresponding typed value from the `getVariableLocalTyped()`
-   * method.
+   * @param variableName name of the variable to be retrieved as a typed value.
    * 
-   * @returns a non-null `T` object representing the value of the local variable with
-   * the given name, or `null` if the variable is not found.
+   * @returns a `T` object representing the value of the specified variable.
    */
   @SuppressWarnings("unchecked")
   public <T> T getVariableLocal(String variableName) {
@@ -555,14 +543,15 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * retrieves a TypedValue object associated with a given variable name, using the
-   * Association Manager's local storage. If the variable is found, it returns the
-   * object as a specified type (T), otherwise it returns null.
+   * retrieves a `TypedValue` object associated with a given `variableName`, casting
+   * it to the specified type `T` if found, otherwise returning `null`.
    * 
-   * @param variableName name of the variable to be retrieved from the association manager.
+   * @param variableName name of the variable to be retrieved from the association
+   * manager, which is then used to retrieve the typed value associated with that
+   * variable name.
    * 
-   * @returns a `T` object representing the specified variable or `null` if the variable
-   * is not found.
+   * @returns a `TypedValue` object representing the local variable with the given name,
+   * or `null` if the variable does not exist.
    */
   @SuppressWarnings("unchecked")
   public <T extends TypedValue> T getVariableLocalTyped(String variableName) {
@@ -572,13 +561,11 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * sets a local variable associated with an instance of an AssociationManager.
+   * sets a variable locally within an association manager object.
    * 
-   * @param variableName name of a variable that will be assigned the value provided
-   * by the `value` parameter.
+   * @param variableName name of the variable to be set locally.
    * 
-   * @param value object that will be stored as the value of the specified variable in
-   * the local association manager.
+   * @param value local value of the variable that is being set.
    */
   public void setVariableLocal(String variableName, Object value) {
     associationManager.setVariableLocal(variableName, value);
@@ -623,10 +610,9 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * sets the value of a Task object to an id.
+   * starts a task with the given ID.
    * 
-   * @param task Id of an existing task to be started in the function `startTask()`
-   * when the `setTask()` method is called.
+   * @param task ID of an existing task to be started when the function is called.
    */
   public void setTask(Task task) {
     startTask(task.getId());
@@ -634,10 +620,11 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * sets the value of the `taskId` field to a given `String` argument, starting a new
-   * task with that ID.
+   * sets the `taskId` parameter to the value passed as an argument, which then triggers
+   * the start of the task associated with that ID.
    * 
-   * @param taskId identity of a task to be initiated by calling the `startTask` method.
+   * @param taskId identification of a task to be executed by the `startTask()` method,
+   * which is called by the `setTaskId()` function.
    */
   public void setTaskId(String taskId) {
     startTask(taskId);
@@ -645,10 +632,10 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * associates an execution with a unique identifier, stored in the `id` field.
+   * associates an execution with the given ID to the object instance.
    * 
-   * @param execution execution to be associated with the current code document, as
-   * indicated by the `associateExecutionById()` method call.
+   * @param execution Execution object that will be associated with the current code
+   * generation task.
    */
   public void setExecution(Execution execution) {
     associateExecutionById(execution.getId());
@@ -656,11 +643,11 @@ public class BusinessProcess implements Serializable {
 
 
   /**
-   * associates an execution ID with a specific code instance.
+   * associates an execution ID with a code snippet, enabling its execution history to
+   * be tracked and managed.
    * 
-   * @param executionId unique identifier for the execution being associated with the
-   * current instance of the code, which allows for proper association and tracking of
-   * the execution within the system.
+   * @param executionId unique identifier for an execution and is used to associate it
+   * with the current code execution.
    */
   protected void setExecutionId(String executionId) {
     associateExecutionById(executionId);
