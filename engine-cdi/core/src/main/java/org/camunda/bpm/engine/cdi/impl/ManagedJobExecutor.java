@@ -40,6 +40,11 @@ public class ManagedJobExecutor extends JobExecutor {
     this.managedExecutorService = managedExecutorService;
   }
 
+  /**
+   * @param jobIds
+   * 
+   * @param processEngine
+   */
   @Override
   public void executeJobs(List<String> jobIds, ProcessEngineImpl processEngine) {
     try {
@@ -50,6 +55,9 @@ public class ManagedJobExecutor extends JobExecutor {
     }
   }
 
+  /**
+   * 
+   */
   @Override
   protected void startExecutingJobs() {
     try {
@@ -59,6 +67,9 @@ public class ManagedJobExecutor extends JobExecutor {
     }
   }
 
+  /**
+   * 
+   */
   @Override
   protected void stopExecutingJobs() {
     // nothing to do

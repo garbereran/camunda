@@ -64,6 +64,9 @@ public class SpringExpressionManager extends JuelExpressionManager {
     this(applicationContext, null);
   }
 
+  /**
+   * @returns
+   */
   @Override
   protected ELResolver createElResolver() {
     CompositeELResolver compositeElResolver = new CompositeELResolver();

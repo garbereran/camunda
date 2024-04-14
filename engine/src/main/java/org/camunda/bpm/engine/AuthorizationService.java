@@ -68,6 +68,11 @@ import org.camunda.bpm.engine.authorization.Resources;
  * @author Daniel Meyer
  * @since 7.0
  */
+/**
+ * provides methods for creating new authorization objects, saving them, deleting
+ * them, querying for authorizations, and performing authorization checks on users
+ * and resources.
+ */
 public interface AuthorizationService {
   
   // Authorization CRUD //////////////////////////////////////
